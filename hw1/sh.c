@@ -85,7 +85,7 @@ int
 getcmd(char *buf, int nbuf)
 {
   
-  if (isatty(fileno(stdin)))
+  if (isatty(fileno(stdin)))  // test input source
     fprintf(stdout, "6.828$ ");
   memset(buf, 0, nbuf);
   fgets(buf, nbuf, stdin);
@@ -97,20 +97,21 @@ getcmd(char *buf, int nbuf)
 int
 main(void)
 {
-  static char buf[100];
+  static char buf[100];  // 存用户的输入
   int fd, r;
 
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
+	// cmd: cd
     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
       // Clumsy but will have to do for now.
       // Chdir has no effect on the parent if run in the child.
       buf[strlen(buf)-1] = 0;  // chop \n
-      if(chdir(buf+3) < 0)
+      if(chdir(buf+3) < 0)  // chdir(path) can change work directory
         fprintf(stderr, "cannot cd %s\n", buf+3);
       continue;
     }
-    if(fork1() == 0)
+    if(fork1() == 0) // 创建子进程,在子进程中执行下面命令
       runcmd(parsecmd(buf));
     wait(&r);
   }
@@ -215,10 +216,10 @@ peek(char **ps, char *es, char *toks)
   char *s;
   
   s = *ps;
-  while(s < es && strchr(whitespace, *s))
+  while(s < es && strchr(whitespace, *s)) // 跳过空白符
     s++;
   *ps = s;
-  return *s && strchr(toks, *s);
+  return *s && strchr(toks, *s); // 当前ps中的第一个非空字符 && 这个字符在toks字符串中的位置,换句话说，就是看*s这个字符是否在toks中出现.
 }
 
 struct cmd *parseline(char**, char*);
@@ -244,7 +245,7 @@ parsecmd(char *s)
   char *es;
   struct cmd *cmd;
 
-  es = s + strlen(s);
+  es = s + strlen(s);          // es指向s(buf)的末尾end of string.
   cmd = parseline(&s, es);
   peek(&s, es, "");
   if(s != es){
@@ -267,8 +268,8 @@ parsepipe(char **ps, char *es)
 {
   struct cmd *cmd;
 
-  cmd = parseexec(ps, es);
-  if(peek(ps, es, "|")){
+  cmd = parseexec(ps, es); // 普通指令
+  if(peek(ps, es, "|")){   // pipeline 指令
     gettoken(ps, es, 0, 0);
     cmd = pipecmd(cmd, parsepipe(ps, es));
   }
@@ -307,25 +308,25 @@ parseexec(char **ps, char *es)
   struct execcmd *cmd;
   struct cmd *ret;
   
-  ret = execcmd();
+  ret = execcmd();  // 为指令分配内存
   cmd = (struct execcmd*)ret;
 
   argc = 0;
   ret = parseredirs(ret, ps, es);
   while(!peek(ps, es, "|")){
-    if((tok=gettoken(ps, es, &q, &eq)) == 0)
+    if((tok=gettoken(ps, es, &q, &eq)) == 0)	// q 和 eq 用来记录了一个真正的arg
       break;
     if(tok != 'a') {
       fprintf(stderr, "syntax error\n");
       exit(-1);
     }
-    cmd->argv[argc] = mkcopy(q, eq);
+    cmd->argv[argc] = mkcopy(q, eq);            // 拷贝arg
     argc++;
-    if(argc >= MAXARGS) {
+    if(argc >= MAXARGS) { // 命令太长
       fprintf(stderr, "too many args\n");
       exit(-1);
     }
-    ret = parseredirs(ret, ps, es);
+    ret = parseredirs(ret, ps, es);            // 检查是否有重定向
   }
   cmd->argv[argc] = 0;
   return ret;
