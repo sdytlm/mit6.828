@@ -47,6 +47,8 @@ runcmd(struct cmd *cmd)
   struct execcmd *ecmd;
   struct pipecmd *pcmd;
   struct redircmd *rcmd;
+  char cmdPath[10] = "/bin/";
+
 
   if(cmd == 0)
     exit(0);
@@ -56,27 +58,42 @@ runcmd(struct cmd *cmd)
     fprintf(stderr, "unknown runcmd\n");
     exit(-1);
 
-  case ' ':
+  case ' ':                       // 普通命令
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit(0);
-    fprintf(stderr, "exec not implemented\n");
-    // Your code here ...
+
+	// Your code here ...
+	if(execv(ecmd->argv[0],ecmd->argv)==-1){
+		// 到/bin目录中找命令
+		char cmdPath[10] = "/bin/";
+		strcat(cmdPath,ecmd->argv[0]);
+		if(execv(cmdPath,ecmd->argv)==-1)
+			fprintf(stderr, "Command not found\n");
+    
+	}
     break;
 
-  case '>':
+  case '>':                       // 重定向命令
   case '<':
     rcmd = (struct redircmd*)cmd;
-    fprintf(stderr, "redir not implemented\n");
+    //fprintf(stderr, "redir not implemented\n");
     // Your code here ...
-    runcmd(rcmd->cmd);
+    close(0);
+	close(1);
+	if(open(
+
+	runcmd(rcmd->cmd);
     break;
 
-  case '|':
+  case '|':                      //  管道线命令
     pcmd = (struct pipecmd*)cmd;
-    fprintf(stderr, "pipe not implemented\n");
+    // fprintf(stderr, "pipe not implemented\n");
     // Your code here ...
-    break;
+  
+	
+	
+	break;
   }    
   exit(0);
 }
