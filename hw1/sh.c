@@ -79,14 +79,11 @@ runcmd(struct cmd *cmd)
     rcmd = (struct redircmd*)cmd;
     //fprintf(stderr, "redir not implemented\n");
     // Your code here ...
-    if(cmd->type == '>')
-        close(1);
-    else
-        close(0);
-    rcmd->fd = open(rcmd->file,rcmd->mode);
-	if(rcmd->fd == -1)
+    close(rcmd->fd);		// 重定向命令已经默认的fd指向了0或1，所以这里是关闭stdin 或者 stdout
+	if(open(rcmd->file,rcmd->mode,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<0){
         fprintf(stderr,"Cannot open file\n");
-
+		exit(0);
+	}
 	runcmd(rcmd->cmd);
     break;
 
@@ -94,7 +91,7 @@ runcmd(struct cmd *cmd)
     pcmd = (struct pipecmd*)cmd;
     // fprintf(stderr, "pipe not implemented\n");
     // Your code here ...
-  
+	 
 	
 	
 	break;
@@ -172,7 +169,7 @@ redircmd(struct cmd *subcmd, char *file, int type)
   cmd->cmd = subcmd;
   cmd->file = file;
   cmd->mode = (type == '<') ?  O_RDONLY : O_WRONLY|O_CREAT|O_TRUNC;
-  cmd->fd = (type == '<') ? 0 : 1;
+  cmd->fd = (type == '<') ? 0 : 1;  // 这里已经给重定向的命令默认分配的fd
   return (struct cmd*)cmd;
 }
 
