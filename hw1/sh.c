@@ -79,9 +79,13 @@ runcmd(struct cmd *cmd)
     rcmd = (struct redircmd*)cmd;
     //fprintf(stderr, "redir not implemented\n");
     // Your code here ...
-    close(0);
-	close(1);
-	if(open(
+    if(cmd->type == '>')
+        close(1);
+    else
+        close(0);
+    rcmd->fd = open(rcmd->file,rcmd->mode);
+	if(rcmd->fd == -1)
+        fprintf(stderr,"Cannot open file\n");
 
 	runcmd(rcmd->cmd);
     break;
