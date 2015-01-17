@@ -68,8 +68,15 @@ runcmd(struct cmd *cmd)
 		// 到/bin目录中找命令
 		char cmdPath[10] = "/bin/";
 		strcat(cmdPath,ecmd->argv[0]);
-		if(execv(cmdPath,ecmd->argv)==-1)
-			fprintf(stderr, "Command not found\n");
+		if(execv(cmdPath,ecmd->argv)==-1){	// test /bin/cmd
+			char cmdPath2[15] = "/usr/bin/";
+			strcat(cmdPath2,ecmd->argv[0]);	// test /usr/bin/cmd (e.g.sort)
+			if(execv(cmdPath2,ecmd->argv)==-1){
+				fprintf(stderr, "Command %s not found\n",ecmd->argv[0]);
+				exit(0);	
+			}
+
+		}
     
 	}
     break;
@@ -91,8 +98,29 @@ runcmd(struct cmd *cmd)
     pcmd = (struct pipecmd*)cmd;
     // fprintf(stderr, "pipe not implemented\n");
     // Your code here ...
-	 
-	
+	if(pipe(p)<0){
+		fprintf(stderr,"Create pipe failes\n");
+		exit(0);
+	}
+	// 子进程把pipe的right end 和 标准输出连起来
+	if(fork1()==0){
+		close(1);
+		dup(p[1]); // 标准输出被赋予fd:p[1]
+		close(p[0]);
+		close(p[1]);  // 这样fd表里只剩下标准输入fd:0 和输出fd:p[1]
+		runcmd(pcmd->left);
+	}
+	if(fork1()==0){
+		close(0);
+		dup(p[0]); // 标准输入被赋予fd:p[0]
+		close(p[0]);
+		close(p[1]); // 这样fd表里只剩下标准输入fd:fd[0] 和 输出fd:p[0]
+		runcmd(pcmd->right);
+	}
+	close(p[0]);
+	close(p[1]);
+	wait();	// 父进程等待子进程结束。
+	wait();
 	
 	break;
   }    
